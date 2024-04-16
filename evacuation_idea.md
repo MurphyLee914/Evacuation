@@ -1,0 +1,97 @@
+### evacuation_model
+
+- Sets
+
+  - $N(L)$: Network of floors $L$
+    - $L$: Set of floors in the hospital, $L=\{1,2,…,\bar l\}$ and $\bar l = |L|$.
+      - $L^-=\{2,3,…,\bar l\}$, where $\bar l$ denotes the top floor.
+      - $L_{\_}=\{1,2,…,\bar l-1\}$, where 1 denotes the ground floor.
+    - $E_l$: Set of exits on floor $l$
+    - $A$: Set of exit arcs between floors, where $a_{ij} \in A$ if exit $i$ on floor $l$ is connected to exit $j$ on floor $l-1$
+  - Floor $L$
+    - $O$: Set of stations emergency staffs depart
+    - $E'$: Set of available exits on floor $l$
+    - $F$: Set of patient rooms on floor $l$
+    - $V$: Set of all nodes, $V=O \cup E \cup F$
+    - $B_1$: Set of arcs from station to patient room
+    - $B_2$: Set of arcs from patient room to another
+    - $B_3$: Set of arcs from patient room to exit
+    - $B$: Set of all arcs $B=B_1 \cup B_2 \cup B_3$
+    - $S$: Set of staffs on floor $l$
+    - $W$: Set of resources
+- Parameters
+  - $f_o$: Initial point of fire occurrence $(x_0, y_0)$
+  - $a_i^l$: Availability of exit $i$ on floor $l$
+  - $c_i^l$: Capacity of the path between exit $i$ on floor $l$ and exit $j$ on floor  $l-1$
+  - $d_{ij}$: Distance arcs $(i,j)\in B$
+  - $d'_{ij}$: Distance between exit $i$ on floor $l$ and exit $j$ on floor $l-1$
+  - $e_{ij}^l$: Distance between exits on floor $l$
+  - $d_{i0}^l$: Distance from exit $i$ to the fire occurrence point $f_0$ on floor $l$
+  - $d_{s0}$: Distance from patient group led by staff $s$ to $f_0$
+  - $t_i$: Stop time at patient room $i$
+  - $n_s$: Maximum number of available staff
+  - $n_{li}^p$: Number of patient at patient room $i$ on floor $l$
+  - $v_s$: Evacuation speed of staff
+  - $o_v$: Visibility $(0,1)$
+  - $v_f$: Speed of fire spread
+  - $h_s$: Panic level of patient group led by staff $s$
+    - $h_s = \mu_1 \cdot e^{{-d_{s0}}} - \mu_2 \cdot (1-o_v) +\mu_3 \cdot v_f, \quad \forall s \in S$
+  - $v'_s$: Evacuation speed of patient group led by staff $s$
+    - $v_e$: Basic evacuation speed of patient
+    - $v'_s=$$v_e\cdot (1-\kappa \cdot h_s)\cdot (1+\mu \cdot o_v)$
+  - $k_{s0}$: Initial casualty risk of patient group led by staff $s$
+    - $k_{s0}=f_r\cdot e^{-\alpha \cdot d_{s0}}$
+  - $t_{f}$: Time for fire spread
+  - $d_s^w$: Demand of resource $w$ for patient group led by staff $s$
+  - $c_w$: Cost of deploying resource $w$
+  - $c_s$: Cost of deploying staff
+  - $q_w$: Quantity of resource $w$
+  - $D_{li}$: Corridor congestion coefficient exit $i$ on floor $l$
+  - $r_c$: Initial casualty risk coefficient
+  - $\alpha, \beta, \gamma, \delta, \kappa$: Adjustment coefficients
+  - $w_1, w_2, w_3$: Objective weights
+- Decision variables
+  - $x_{ijs}^{l}$: 1 if staff $s$ visit patient from room $i$ to $j$ on floor $l$, 0 otherwise
+  - $y_{ijs}^{l}$: 1 if staff $s$ lead patients to evacuate through exit $i$ on floor $l$ and $j$ on floor $l-1$, i and j correspond vertically
+  - $z_{ijs}^{l}$: 1 if staff $s$ evacuate through exit $i$ to $j$ on the same floor $l$, 0 otherwise
+  - $t_{li}^s$: arrival time at patient room $i$ of staff $s$ on floor $l$
+  - $n_{li}^{s}$: number of patient staff $s$ collected at room $i$ on floor $l$
+  - $n_{ls}$: number of staffs deployed on floor $l$
+  - $n_s^w$: number of resource $w$ allocated to patient group led by staff $s$
+  - Auxiliary variables
+  - $t_{li}^{'s}$: arrival time at exit $i$ of staff $s$ on floor $l$
+  - $m_{li}^s$: number of patients led by staff $s$ at exit $i$ on floor $l$
+- Objective function
+  - Minimize the average evacuation time, risk, and total resource costs.
+  - $\text{min } Z = w_1 \cdot T+ w_2 \cdot R + w_3 \cdot C$
+    - $T = \frac{1}{|S\cdot L|}\sum_{l \in L} \sum_{s \in S}\sum_{i, j \in B} x_{ijs}^{l} \cdot (\frac{d_{ij}}{v_s}+t_i) + \\\frac{1}{|S|} \sum_{l \in L} \sum_{s \in S} \sum_{i, j \in A}  y_{ijs}^{l} \cdot \frac{d'*{ij}}{v'\*s \cdot |l-1|} +\frac{1}{|S\cdot L|}\sum\*{l \in L} \sum*{s \in S}\sum_{i, j \in E(l)} z_{ijs}^{l} \cdot \frac{e_{ij}^l}{v_s}$
+    - $R= \frac{1}{|S|}\sum_{s \in S} \left( w_{r1} \cdot k_{s0} + w_{r2} \cdot \frac{v_f}{v'*s + \epsilon} + w*{r3} \cdot e^{\gamma \cdot h_s} + w_{r4} \cdot (l_s - \sum_{l \in L} \sum_{i, j \in A}  y_{ijs}^{l})  \right)$
+    - $C = \sum_{l \in L} n_{ls} \cdot c_s$ $+\sum_{s \in S} \sum_{w \in W} c_w \cdot n_s^w$
+- Constraints
+  - $\sum_{i \in O}\sum_{j \in F} x_{ijs}^{l}=1 \quad \forall s \in S,\forall l \in L$
+  - $\sum_{s \in S}\sum_{j \in E' \cup F} x_{ijs}^{l}=1 \quad \forall i \in F,\forall l \in L$
+  - $\sum_{i \in O \cup F} x_{ijs}^{l} =\sum_{i \in F \cup E'} x_{jis}^{l}\quad \forall j \in F, \forall s \in S, \forall l \in L$
+  - $\sum_{i \in O} \sum_{j \in F} x_{ijs}^{l}=\sum_{i \in F} \sum_{j \in E'} x_{ijs}^{l} \quad \forall j \in F, \forall s \in S, \forall l \in L$
+  - $y_{ijs}^{l} ≤ a_i^l \quad \forall i \in E_l,\forall s \in S,\forall l \in L\backslash \{1\}$
+  - $\sum_{j \in E_{l-1}} y_{ijs}^{l} =a_i^l \quad \forall s \in S, \forall i \in E_l, \forall l \in L\backslash \{1\}$
+  - $\sum_{i \in E_l} \sum_{j \in E_{l-1}} y_{ijs}^{l} = a_i^l \quad \forall s \in S, \forall l \in L \backslash \{1\}$
+  - $\sum_{i \in E_{l+1}} y_{ijs}^{l} = a_j^l \sum_{k \in E_{l-1}} y_{jks}^l \quad \forall j \in E_l, \forall s \in S, \forall l \in L$
+  - $\sum_{j \in V} y_{ijs}^{1} =0 \quad \forall i \in E, \forall s \in S$
+  - $\sum_{i \in V} y_{ijs}^{\bar l} =0 \quad \forall j \in E, \forall s \in S$
+  - $z_{ijs}^{l} ≤ a_j^l \quad \forall i \in E_l,\forall s \in S,\forall l \in L$
+  - $\sum_{j \in E_l} z_{ijs}^{l}=1-a_i^l \quad \forall i \in E_l, \forall s \in S, \forall l \in L$
+  - $\sum_{i \in E_{l+1}} y_{ijs}^{l}(1-a_j^l) = \sum_{k \in E_l} z_{jks}^{l} \quad \forall j \in E_l, \forall s \in S, \forall l \in L$
+  - $t_{li}^s +t_i +\frac{d_{ij}}{v_s} ≤ t_{lj}^s + M(1-x_{ijs}^{l}) \quad \forall (i,j) \in B,\forall s \in S, \forall l \in L$
+  - $t_{li}^s +\frac{d'*{ij}}{v'\*s} ≤ t\*{lj}^s + M(1-y*{ijs}^{l}) \quad \forall (i,j) \in A,\forall s \in S, \forall l \in L\backslash \{1\}$
+  - $t_{li}^s +\frac{e_{ij}^l}{v_s} ≤ t_{lj}^s + M(1-z_{ijs}^{l}) \quad \forall i,j \in E_l,\forall s \in S, \forall l \in L$
+  - $n_{li}^{s} ≤ n_{li}^p \quad \forall i \in F,\forall l \in L$
+  - $\sum_{l\in L} n_{ls} ≤ n_s$
+  - $\sum_{j\in F} n_{lj}^{s} = m_{li} \quad \forall i \in E,\forall s \in S,\forall l \in L$
+  - $\sum_{w \in W} n_s^w \geq \sum_{w \in W} d_s^w , \quad \forall s \in S$
+  - $\sum_{s \in S} n_s^w \leq q_w, \quad \forall w \in W$
+  - $n_{li}^{s}=0 \quad \forall i \in O, \forall s \in S, \forall l \in L$
+  - $t_{li}^s\in R^+ \quad \forall i \in E, \forall l \in L$
+  - $n_{li}^{s}, m_{li}, n_{ls}, n_s^w \in Z^+ \quad \forall i \in E, \forall s \in S, \forall l \in L, \forall w \in W$
+  - $x_{ijs}^{l}\in \{0,1\} \quad \forall (i,j) \in B,\forall s \in S, \forall l \in L$
+  - $y_{ijs}^{l}\in \{0,1\}   \quad \forall (i,j) \in A,\forall s \in S, \forall l \in L$
+  - $z_{ijs}^{l}\in \{0,1\} \quad \forall i,j \in E_l, \forall s \in S, \forall l \in L\backslash \{1\}$ 
